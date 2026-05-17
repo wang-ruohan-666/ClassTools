@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1006</width>
+    <height>174</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string/>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <widget class="QFrame" name="frame">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>0</y>
+     <width>411</width>
+     <height>45</height>
+    </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>45</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QWidget#Form &gt; QFrame#frame{
+    border: 2px solid rgb(119, 136, 153);
+	background-color:#ebebeb; 
+	border-radius:15px;
+}</string>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Shape::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Shadow::Raised</enum>
+   </property>
+   <widget class="QFrame" name="frame_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>4</y>
+      <width>991</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Shadow::Raised</enum>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Hello Word!</string>
+       </property>
+      </widget>
+     </item>
+     <item alignment="Qt::AlignmentFlag::AlignRight">
+      <widget class="QRadioButton" name="radioButton">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="mouseTracking">
+        <bool>true</bool>
+       </property>
+       <property name="tabletTracking">
+        <bool>false</bool>
+       </property>
+       <property name="acceptDrops">
+        <bool>false</bool>
+       </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QRadioButton::indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 6px;
+	border: 2px solid rgb(226, 226, 226);
+    background: rgb(242, 255, 0);
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QFrame" name="options">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>30</y>
+      <width>831</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Shadow::Raised</enum>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QPushButton" name="allow">
+       <property name="minimumSize">
+        <size>
+         <width>91</width>
+         <height>31</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>198</width>
+         <height>31</height>
+        </size>
+       </property>
+       <property name="sizeIncrement">
+        <size>
+         <width>28</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>32</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{
+	background-color:rgb(255, 255, 255); 
+	border-radius:8px;
+}</string>
+       </property>
+       <property name="text">
+        <string>允许</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="refuse">
+       <property name="minimumSize">
+        <size>
+         <width>197</width>
+         <height>31</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>197</width>
+         <height>31</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{
+	background-color:rgb(255, 255, 255); 
+	border-radius:8px;
+}</string>
+       </property>
+       <property name="text">
+        <string>拒绝</string>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
