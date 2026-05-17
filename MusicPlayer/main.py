@@ -453,7 +453,7 @@ class MainWindow(QWidget):
             unikey = None
             try:
                 unikey = self.post("/login/qr/key", True).get("data").get("unikey")
-                qr = self.post(f"/login/qr/create", False, {"key": unikey, "qrimg": True}).get("data").get("qrimg")
+                qr = self.post(f"/login/qr/create", True, {"key": unikey, "qrimg": True}).get("data").get("qrimg")
             except requests.exceptions.ConnectionError:
                 self.show_text("生成二维码登录失败")
             if qr:
@@ -474,6 +474,13 @@ class MainWindow(QWidget):
                         self.cookie = data["cookie"]
                         login_time_reduce.stop()
                         login_time_reduce.deleteLater()
+                        login_time_reduce.deleteLater()
+                        file={}
+                        with open("settings.json","r") as f:
+                            file=json.load(f)
+                        file["cookie"] = self.cookie
+                        with open("settings.json", "w") as f:
+                            f.write(json.dumps(file))
                         self.main.labelLoginTimeout.setText("登录成功")
 
                         def hide():
@@ -485,8 +492,8 @@ class MainWindow(QWidget):
                         QTimer.singleShot(3000, hide)
                         info(f"登录成功{self.cookie}")
                     elif data['code'] == 802:
-                        login_time_reduce.stop()
-                        login_time_reduce.deleteLater()
+                        if login_time_reduce.isActive():
+                            login_time_reduce.stop()
                         self.main.labelLoginTimeout.setText("等待确认")
 
                 self.login_remaining = 90
