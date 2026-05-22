@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>373</width>
-    <height>584</height>
+    <height>592</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -46,12 +46,6 @@
       <height>16</height>
      </rect>
     </property>
-    <property name="minimumSize">
-     <size>
-      <width>0</width>
-      <height>0</height>
-     </size>
-    </property>
     <property name="font">
      <font>
       <pointsize>10</pointsize>
@@ -59,6 +53,30 @@
     </property>
     <property name="text">
      <string>播放列表</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="png">
+    <property name="geometry">
+     <rect>
+      <x>320</x>
+      <y>0</y>
+      <width>30</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton { 
+	border-radius:3px;
+	padding: 50px; 
+	background: transparent; 
+	border: none; 
+}
+QPushButton:hover { 
+	background-color: #f0f0f0; 
+}</string>
+    </property>
+    <property name="text">
+     <string/>
     </property>
    </widget>
   </widget>
@@ -86,6 +104,7 @@
    <property name="frameShadow">
     <enum>QFrame::Shadow::Raised</enum>
    </property>
+   <layout class="QVBoxLayout" name="verticalLayout"/>
   </widget>
  </widget>
  <resources/>

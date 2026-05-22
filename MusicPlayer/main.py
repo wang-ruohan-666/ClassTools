@@ -36,7 +36,7 @@ class MainWindow(QWidget):
         self.main = Main()
         self.main.setupUi(self)
         self.settings = SettingsWindow()
-        self.playlist = PlaylistWindows()
+        self.playlist = PlaylistWindows(self.settings)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.main.options.hide()
@@ -57,8 +57,8 @@ class MainWindow(QWidget):
 
         self.cookie = ""
         # noinspection SpellCheckingInspection
-        if os.path.isfile("settings.json"):
-            with open("settings.json", "r") as f:
+        if os.path.isfile("data/settings.json"):
+            with open("data/settings.json", "r") as f:
                 try:
                     data = json.load(f)
                     self.cookie = data.get("cookie")
@@ -476,10 +476,10 @@ class MainWindow(QWidget):
                         login_time_reduce.deleteLater()
                         login_time_reduce.deleteLater()
                         file={}
-                        with open("settings.json","r") as f:
+                        with open("data/settings.json", "r") as f:
                             file=json.load(f)
                         file["cookie"] = self.cookie
-                        with open("settings.json", "w") as f:
+                        with open("data/settings.json", "w") as f:
                             f.write(json.dumps(file))
                         self.main.labelLoginTimeout.setText("登录成功")
 
