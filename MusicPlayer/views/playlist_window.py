@@ -1,42 +1,50 @@
+# views/playlist_window.py
 from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QTimer, QEasingCurve
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import QWidget, QApplication, QListView, QAbstractItemView
 
-from ui_playlist import Ui_Form as Playlist
-from settings import SettingsWindow
-from GetSongInfo import get_song_info
-from SongItem import SongItem
-from PlaylistModel import PlaylistModel
-from PlaylistDelegate import PlaylistDelegate
+from MusicPlayer.ui_playlist import Ui_Form as Playlist
+from MusicPlayer.managers.settings_manager import SettingsManager
+from MusicPlayer.managers.theme_manager import ThemeManager
+from MusicPlayer.GetSongInfo import get_song_info
+from MusicPlayer.SongItem import SongItem
+from MusicPlayer.PlaylistModel import PlaylistModel
+from MusicPlayer.PlaylistDelegate import PlaylistDelegate
+
 
 class PlaylistWindows(QWidget):
-    def __init__(self,settings_window: SettingsWindow):
+    def __init__(self, settings_mgr: SettingsManager, theme_mgr: ThemeManager):
         super().__init__()
+        self.settings_mgr = settings_mgr
+        self.theme_mgr = theme_mgr
+
         self.playlist = Playlist()
         self.playlist.setupUi(self)
         self.move_playlist_window()
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
+
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.settings = settings_window
+
         self.hide_anim = QPropertyAnimation(self, b"geometry")
         self.show_anim = QPropertyAnimation(self, b"geometry")
         self.hide_timer = QTimer(self)
         self.fixed = False
-        self.playlist_hide_time=3000
+        self.playlist_hide_time = 3000
         self.is_hide = False
-        self.playlist_model=PlaylistModel()
+
+        self.playlist_model = PlaylistModel()
         self.setAcceptDrops(True)
-        self.playlist_delegate = PlaylistDelegate(is_dark=False)
+        self.playlist_delegate = PlaylistDelegate(is_dark=(self.theme_mgr.get_current_theme_name() == "dark"))
 
         self.playlist_view = QListView()
-
 
         self.init_playlist()
         self.init_show_anim()
         self.init_hide_anim()
         self.init_playlist_view()
-        self.apply_system_theme()
+        self.connect_signals()
+        self.theme_mgr.theme_applied.connect(self._on_theme)
+
         self.show()
 
     def init_playlist_view(self):
@@ -52,72 +60,25 @@ class PlaylistWindows(QWidget):
         self.playlist.root.layout().addWidget(self.playlist_view)
 
     def init_playlist(self):
-        def theme_changed(theme: str):
-            if theme == "深色":
-                self.dark()
-            elif theme == "浅色":
-                self.light()
-            elif theme == "跟随系统":
-                QApplication.styleHints().colorSchemeChanged.connect(self.apply_system_theme)
-                self.apply_system_theme()
-        def anim_speed_value_changed():
-            self.show_anim.setDuration(int(600 / self.settings.anim_speed))
-            self.hide_anim.setDuration(int(300 / self.settings.anim_speed))
-        def enter():
-            self.is_hide = True
-            self.hide_anim.start()
-        self.settings.theme_changed.connect(theme_changed)
         self.init_fixed()
-        self.hide_timer.timeout.connect(enter)
+        # 自动隐藏定时器
+        self.hide_timer.timeout.connect(self._start_hide)
         self.hide_timer.setSingleShot(True)
         self.hide_timer.start(self.playlist_hide_time)
-        self.settings.anim_speed_value_changed.connect(anim_speed_value_changed)
 
+    def connect_signals(self):
+        # 动画速度变化 -> 更新动画时长
+        self.settings_mgr.anim_speed_changed.connect(self._update_anim_durations)
+        # 置顶变化（如果需要）
+        self.settings_mgr.stay_on_top_changed.connect(self._update_stay_on_top)
 
-    def init_fixed(self):
-        def fixed_clicked():
-            if self.fixed:
-                self.fixed = False
-                self.playlist.png.setIcon(QIcon("data/unpin.png"))
-            else:
-                self.fixed = True
-                self.playlist.png.setIcon(QIcon("data/fixed.png"))
-        self.playlist.png.setIcon(QIcon("data/unpin.png"))
-        self.playlist.png.setIconSize(QSize(25, 25))
-        self.playlist.png.clicked.connect(fixed_clicked)
+    def _on_theme(self,theme: str):
+        if theme == "dark":
+            self._dark()
+        elif theme == "light":
+            self._light()
 
-    def init_show_anim(self):
-        self.show_anim.setDuration(int(600 / self.settings.anim_speed))
-        start_geo = self.geometry()
-        self.show_anim.setEasingCurve(QEasingCurve.Type.InBack)
-        screen_rect = QApplication.primaryScreen().availableGeometry()
-        end_geo = start_geo.translated(screen_rect.right() - start_geo.left(), 0)
-        self.show_anim.setStartValue(end_geo)
-        self.show_anim.setEndValue(start_geo)
-
-    def init_hide_anim(self):
-        self.hide_anim.setDuration(int(300 / self.settings.anim_speed))
-        start_geo = self.geometry()
-        self.hide_anim.setEasingCurve(QEasingCurve.Type.InCubic)
-        screen_rect = QApplication.primaryScreen().availableGeometry()
-        end_geo = start_geo.translated(screen_rect.right() - start_geo.left(), 0)
-        self.hide_anim.setStartValue(start_geo)
-        self.hide_anim.setEndValue(end_geo)
-
-    def add_to_playlist(self,path):
-        info=get_song_info(path)
-        item=SongItem(info[0],info[1],info[2],info[3])
-        self.playlist_model.add_song(item)
-
-    def move_playlist_window(self):
-        screen = QGuiApplication.primaryScreen().size()
-        screen_rect = QApplication.primaryScreen().availableGeometry()
-        win_rect = self.frameGeometry()
-        win_rect.moveRight(screen_rect.right() - 10)
-        win_rect.moveTop(int((screen.height() - self.frameGeometry().height()) / 2))
-        self.move(win_rect.topLeft())
-
-    def dark(self):
+    def _dark(self):
         self.playlist_delegate.is_dark = True
         self.playlist_view.viewport().update()
         self.setStyleSheet("""
@@ -208,7 +169,7 @@ QScrollBar::sub-page:vertical {
             border-top-right-radius: 15px;
         }""")
 
-    def light(self):
+    def _light(self):
         self.playlist_delegate.is_dark = False
         self.playlist_view.viewport().update()
         self.setStyleSheet("""
@@ -286,7 +247,7 @@ QScrollBar::sub-page:vertical {
             background: none;
         }""")
         self.playlist.root.setStyleSheet("""#root{
-	background-color:#e8e8e8;
+    background-color:#e8e8e8;
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     border-top-left-radius: 0px;
@@ -301,20 +262,71 @@ QScrollBar::sub-page:vertical {
             border-top-right-radius: 15px;
         }""")
 
-    def apply_system_theme(self, scheme=None):
-        if scheme is None:
-            scheme = QApplication.styleHints().colorScheme()
-        if scheme == Qt.ColorScheme.Dark:
-            self.dark()
-        else:
-            self.light()
+    def _update_anim_durations(self, speed: float):
+        self.show_anim.setDuration(int(600 / speed))
+        self.hide_anim.setDuration(int(300 / speed))
 
-    def leaveEvent(self, event, /):
+    def _update_stay_on_top(self, checked: bool):
+        if checked:
+            self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
+        else:
+            self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
+        self.show()
+
+    def init_fixed(self):
+        def fixed_clicked():
+            if self.fixed:
+                self.fixed = False
+                self.playlist.png.setIcon(QIcon("data/unpin.png"))
+            else:
+                self.fixed = True
+                self.playlist.png.setIcon(QIcon("data/fixed.png"))
+        self.playlist.png.setIcon(QIcon("data/unpin.png"))
+        self.playlist.png.setIconSize(QSize(25, 25))
+        self.playlist.png.clicked.connect(fixed_clicked)
+
+    def init_show_anim(self):
+        self.show_anim.setDuration(int(600 / self.settings_mgr.anim_speed))
+        start_geo = self.geometry()
+        self.show_anim.setEasingCurve(QEasingCurve.Type.InBack)
+        screen_rect = QApplication.primaryScreen().availableGeometry()
+        end_geo = start_geo.translated(screen_rect.right() - start_geo.left(), 0)
+        self.show_anim.setStartValue(end_geo)
+        self.show_anim.setEndValue(start_geo)
+
+    def init_hide_anim(self):
+        self.hide_anim.setDuration(int(300 / self.settings_mgr.anim_speed))
+        start_geo = self.geometry()
+        self.hide_anim.setEasingCurve(QEasingCurve.Type.InCubic)
+        screen_rect = QApplication.primaryScreen().availableGeometry()
+        end_geo = start_geo.translated(screen_rect.right() - start_geo.left(), 0)
+        self.hide_anim.setStartValue(start_geo)
+        self.hide_anim.setEndValue(end_geo)
+
+    def add_to_playlist(self, path):
+        info = get_song_info(path)
+        item = SongItem(info[0], info[1], info[2], info[3])
+        self.playlist_model.add_song(item)
+
+    def move_playlist_window(self):
+        screen = QGuiApplication.primaryScreen().size()
+        screen_rect = QApplication.primaryScreen().availableGeometry()
+        win_rect = self.frameGeometry()
+        win_rect.moveRight(screen_rect.right() - 10)
+        win_rect.moveTop(int((screen.height() - self.frameGeometry().height()) / 2))
+        self.move(win_rect.topLeft())
+
+    def _start_hide(self):
+        if not self.fixed:
+            self.is_hide = True
+            self.hide_anim.start()
+
+    def leaveEvent(self, event):
         super().leaveEvent(event)
         if not self.fixed:
             self.hide_timer.start(self.playlist_hide_time)
 
-    def enterEvent(self, event, /):
+    def enterEvent(self, event):
         super().enterEvent(event)
         if self.is_hide:
             self.is_hide = False
@@ -325,7 +337,7 @@ QScrollBar::sub-page:vertical {
 
     def dropEvent(self, event):
         urls = event.mimeData().urls()
-        valid_extensions = ('.mp3','.flac','.wav')
+        valid_extensions = ('.mp3', '.flac', '.wav')
         for url in urls:
             file_path = url.toLocalFile()
             if file_path.lower().endswith(valid_extensions):

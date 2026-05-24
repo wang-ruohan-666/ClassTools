@@ -1,29 +1,30 @@
-from PySide6.QtCore import QPropertyAnimation, QEvent, Signal
+# views/settings_window.py
+from PySide6.QtCore import QPropertyAnimation, QEvent
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QMouseEvent
-from PySide6.QtWidgets import QWidget, QApplication, QGraphicsOpacityEffect
+from PySide6.QtWidgets import QWidget, QGraphicsOpacityEffect
 
-from ui_settings import Ui_Form as Settings
+from MusicPlayer.ui_settings import Ui_Form as Settings
 
 
 class SettingsWindow(QWidget):
-    font_changed = Signal(QFont)
-    theme_changed = Signal(str)
-    font_size_changed = Signal(QFont, int)
-    anim_speed_value_changed = Signal()
-    stay_on_top_changed = Signal(bool)
-
-    def __init__(self):
+    def __init__(self, settings_mgr, theme_mgr):
         super().__init__()
+        self.settings_mgr = settings_mgr
+        self.theme_mgr = theme_mgr
         self.settings = Settings()
         self.settings.setupUi(self)
-        self.anim_speed = 1.0
+
+        # 动画相关
+        self.anim_speed = settings_mgr.anim_speed
         self._settings_drag_pos = None
-        self.customization_theme = True
         self.opacity_effect = QGraphicsOpacityEffect()
         self.settings_anim = QPropertyAnimation(self.opacity_effect, b"opacity")
+
         self.init_settings()
         self.init_settings_anim()
+        self.load_initial_values()
+        self.connect_signals()
 
     def init_settings(self):
         self.settings.settingsFrame.hide()
@@ -31,14 +32,11 @@ class SettingsWindow(QWidget):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.settings.treeWidget.itemClicked.connect(self.tree_item_change)
-        self.settings.comboBox.currentTextChanged.connect(self.current_text_changed)
         self.settings.quit.clicked.connect(self.close)
         self.settings.titlebar.installEventFilter(self)
-        self.settings.fontComboBox.currentFontChanged.connect(self.current_font_changed)
-        self.settings.sliderSlider.valueChanged.connect(self.font_size_slider_value_changed)
-        self.settings.sliderSliderSpeed.valueChanged.connect(self.anim_speed_slider_value_changed)
-        self.settings.checkBox.toggled.connect(self.stay_on_top_check_box_changed)
+        # 字体下拉框的编辑框点击事件
         self.settings.fontComboBox.lineEdit().installEventFilter(self)
+        self.theme_mgr.theme_applied.connect(self._on_theme)
 
     def init_settings_anim(self):
         self.settings_anim.setDuration(int(300 / self.anim_speed))
@@ -46,82 +44,37 @@ class SettingsWindow(QWidget):
         self.settings_anim.setEndValue(1.0)
         self.setGraphicsEffect(self.opacity_effect)
 
-    def tree_item_change(self, item, column):
-        self.settings.settingsFrame.hide()
-        self.settings.animSpeedFrame.hide()
-        text = item.text(column)
-        if text == "外观":
-            self.settings.settingsFrame.show()
-        elif text == "动画":
-            self.settings.animSpeedFrame.show()
+    def load_initial_values(self):
+        """从 SettingsManager 加载当前值到控件"""
+        self.settings.comboBox.setCurrentText(self.settings_mgr.theme)
+        self.settings.fontComboBox.setCurrentFont(self.settings_mgr.font)
+        # 字体大小滑动条：假设滑块范围 0~100，映射到字体大小 1~20
+        self.settings.sliderSlider.setValue(self.settings_mgr.font_size * 5)
+        self.settings.labelSize.setText(str(self.settings_mgr.font_size))
+        # 动画速度：滑块 0~20，映射到 0.0~2.0
+        self.settings.sliderSliderSpeed.setValue(int(self.settings_mgr.anim_speed * 10))
+        self.settings.labelSpeed.setText(str(self.settings_mgr.anim_speed))
+        self.settings.checkBox.setChecked(self.settings_mgr.stay_on_top)
 
-    def current_text_changed(self, text):
-        QApplication.styleHints().colorSchemeChanged.connect(self.apply_system_theme)
-        self.customization_theme = False
-        if text == "深色":
-            self.theme_changed.emit("深色")
-            QApplication.styleHints().colorSchemeChanged.disconnect(self.apply_system_theme)
-            self.dark()
-        elif text == "浅色":
-            self.theme_changed.emit("浅色")
-            QApplication.styleHints().colorSchemeChanged.disconnect(self.apply_system_theme)
-            self.light()
-        elif text == "跟随系统":
-            self.theme_changed.emit("跟随系统")
-            self.customization_theme = True
-            self.apply_system_theme()
+    def connect_signals(self):
+        # 主题下拉框变化 -> 直接修改 SettingsManager.theme
+        self.settings.comboBox.currentTextChanged.connect(self._on_theme_combobox_changed)
+        # 字体变化 -> 修改 SettingsManager.font
+        self.settings.fontComboBox.currentFontChanged.connect(self._on_font_changed)
+        # 字体大小滑动条 -> 修改 SettingsManager.font_size
+        self.settings.sliderSlider.valueChanged.connect(self._on_font_size_slider)
+        # 动画速度滑动条 -> 修改 SettingsManager.anim_speed
+        self.settings.sliderSliderSpeed.valueChanged.connect(self._on_anim_speed_slider)
+        # 置顶复选框 -> 修改 SettingsManager.stay_on_top
+        self.settings.checkBox.toggled.connect(self._on_stay_on_top_toggled)
 
-    def current_font_changed(self, font: QFont):
-        self.font_changed.emit(font)
-        self.apply_system_theme()
-        self.update_theme()
+    def _on_theme(self, theme: str):
+        if theme == "dark":
+            self._dark()
+        elif theme == "light":
+            self._light()
 
-    def font_size_slider_value_changed(self, value):
-        self.settings.labelSize.setText(str(round(value / 5.0)))
-        font = self.settings.fontComboBox.font()
-        self.font_size_changed.emit(font, value)
-        self.update_theme()
-
-    def update_theme(self):
-        if self.customization_theme:
-            scheme = QApplication.styleHints().colorScheme()
-            if scheme == Qt.ColorScheme.Dark:
-                self.dark()
-            else:
-                self.light()
-        else:
-            if self.settings.comboBox.currentText() == "浅色":
-                self.light()
-            else:
-                self.dark()
-
-    def apply_system_theme(self, scheme=None):
-        if not self.customization_theme:
-            return
-        if scheme is None:
-            scheme = QApplication.styleHints().colorScheme()
-
-        if scheme == Qt.ColorScheme.Dark:
-            self.dark()
-        else:
-            self.light()
-
-    def anim_speed_slider_value_changed(self, value):
-        self.settings.labelSpeed.setText(str(value / 10))
-        self.anim_speed = value / 10
-        self.settings_anim.setDuration(int(300 / self.anim_speed))
-        self.anim_speed_value_changed.emit()
-
-    def stay_on_top_check_box_changed(self, checked: bool):
-        self.stay_on_top_changed.emit(checked)
-        if checked:
-            self.setWindowFlags(
-                Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
-        else:
-            self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
-        self.show()
-
-    def dark(self):
+    def _dark(self):
         self.setStyleSheet("""
                 QWidget 
                 {
@@ -162,56 +115,56 @@ class SettingsWindow(QWidget):
                     border-radius: 3px;
                 }""")
         self.settings.root.setStyleSheet("""
-#root{
+    #root{
     background-color:#2d2d2d;
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     border-top-left-radius: 0px;
     border-top-right-radius: 0px;
-}""")
+    }""")
         self.settings.titlebar.setStyleSheet("""
-QFrame{
+    QFrame{
     background-color:#1C1B22; 
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
-}""")
+    }""")
         self.settings.treeWidget.setStyleSheet("""
-QTreeWidget {
+    QTreeWidget {
     color: #ffffff;
     background-color: #2d2d2d;
     border: 1px solid #c0c0c0;
     border-radius: 6px;
     padding: 4px;
     outline: none;
-}""")
+    }""")
         for i in [self.settings.comboBox, self.settings.fontComboBox]:
             i.setStyleSheet("""
-QComboBox {
+    QComboBox {
     background-color: #2d2d2d;
     border: 1px solid #5a5a5a;
     border-radius: 6px;
     padding: 4px 8px;
     min-height: 24px;
     color: #ffffff;
-}
-
-QComboBox::drop-down {
+    }
+    
+    QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: top right;
     width: 24px;
     border-left: 1px solid #4a4a4a;
     border-top-right-radius: 6px;
     border-bottom-right-radius: 6px;
-}
-
-QComboBox::down-arrow {
+    }
+    
+    QComboBox::down-arrow {
     width: 8px;
     height: 8px;
-}
-
-QComboBox QAbstractItemView {
+    }
+    
+    QComboBox QAbstractItemView {
     background-color: #2d2d2d;
     border: 1px solid #5a5a5a;
     border-radius: 4px;
@@ -219,17 +172,17 @@ QComboBox QAbstractItemView {
     selection-color: #ffffff;
     padding: 4px;
     outline: none;
-}
-
-QComboBox QAbstractItemView::item {
+    }
+    
+    QComboBox QAbstractItemView::item {
     min-height: 24px;
     padding: 4px 8px;
     border-radius: 3px;
-}
-
-QComboBox QAbstractItemView::item:hover {
+    }
+    
+    QComboBox QAbstractItemView::item:hover {
     background-color: #3c3c3c;
-}""")
+    }""")
         self.settings.sliderSlider.setStyleSheet("""
             QSlider::groove:horizontal {
                 height: 6px;
@@ -237,7 +190,7 @@ QComboBox QAbstractItemView::item:hover {
                 border-radius: 3px;
                 margin: 2px 0;
             }
-
+    
             QSlider::handle:horizontal {
                 width: 16px;
                 height: 16px;
@@ -246,64 +199,64 @@ QComboBox QAbstractItemView::item:hover {
                 border: 2px solid #5a5a5a;
                 border-radius: 8px;
             }
-
+    
             QSlider::handle:horizontal:hover {
                 border-color: #888888;
             }
-
+    
             QSlider::handle:horizontal:pressed {
                 background: #4a4a4a;
                 border-color: #aaaaaa;
             }
-
+    
             QSlider::sub-page:horizontal {
                 background: #448aff;
                 border-radius: 3px;
             }
-
+    
             QSlider::add-page:horizontal {
                 background: #3c3c3c;
                 border-radius: 3px;
             }""")
         self.settings.checkBox.setStyleSheet("""
-QCheckBox {
+    QCheckBox {
     spacing: 8px;
     color: #ffffff;
-}
-
-QCheckBox::indicator {
+    }
+    
+    QCheckBox::indicator {
     width: 10px;
     height: 10px;
     border: 2px solid #5a5a5a;
     border-radius: 4px;
     background-color: #2d2d2d;
-}
-
-QCheckBox::indicator:checked {
+    }
+    
+    QCheckBox::indicator:checked {
     background-color: #448aff;
     border-color: #448aff;
-}
-
-QCheckBox::indicator:checked:hover {
+    }
+    
+    QCheckBox::indicator:checked:hover {
     background-color: #5c9dff;
     border-color: #5c9dff;
-}
-
-QCheckBox::indicator:unchecked:hover {
+    }
+    
+    QCheckBox::indicator:unchecked:hover {
     border-color: #888888;
-}
-
-QCheckBox::indicator:disabled {
+    }
+    
+    QCheckBox::indicator:disabled {
     border-color: #4a4a4a;
     background-color: #3c3c3c;
-}
-
-QCheckBox::indicator:checked:disabled {
+    }
+    
+    QCheckBox::indicator:checked:disabled {
     background-color: #2a4a8a;
     border-color: #2a4a8a;
-}""")
+    }""")
 
-    def light(self):
+    def _light(self):
         self.setStyleSheet("""
 QMenu {
     background-color: #ffffff;
@@ -494,6 +447,44 @@ QCheckBox::indicator:checked:disabled {
     border-color: #a0c4ff;
 }""")
 
+    def _on_theme_combobox_changed(self, text: str):
+        if text in ("深色", "浅色", "跟随系统"):
+            self.settings_mgr.theme = text
+            self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
+
+    def _on_font_changed(self, font: QFont):
+        self.settings_mgr.font = font
+        self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
+
+    def _on_font_size_slider(self, value: int):
+        font_size = round(value / 5.0)
+        self.settings.labelSize.setText(str(font_size))
+        self.settings_mgr.font_size = font_size
+        self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
+
+    def _on_anim_speed_slider(self, value: int):
+        speed = value / 10.0
+        self.settings.labelSpeed.setText(f"{speed:.1f}")
+        self.settings_mgr.anim_speed = speed
+        # 更新窗口自身动画时长
+        self.anim_speed = speed
+        self.settings_anim.setDuration(int(300 / speed))
+        self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
+
+    def _on_stay_on_top_toggled(self, checked: bool):
+        self.settings_mgr.stay_on_top = checked
+        self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
+        # 窗口置顶标志的视觉更新由 ThemeManager 或主窗口处理，这里仅修改标志
+
+    def tree_item_change(self, item, column):
+        self.settings.settingsFrame.hide()
+        self.settings.animSpeedFrame.hide()
+        text = item.text(column)
+        if text == "外观":
+            self.settings.settingsFrame.show()
+        elif text == "动画":
+            self.settings.animSpeedFrame.show()
+
     def eventFilter(self, watched, event: QEvent | QMouseEvent, /):
         if watched == self.settings.fontComboBox.lineEdit() and event.type() == QEvent.Type.MouseButtonPress:
             self.settings.fontComboBox.showPopup()
@@ -509,5 +500,4 @@ QCheckBox::indicator:checked:disabled {
             elif event.type() == QEvent.Type.MouseButtonRelease:
                 self._settings_drag_pos = None
                 return True
-
         return super().eventFilter(watched, event)

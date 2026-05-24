@@ -1,5 +1,7 @@
 MusicPlayer/data/settings.json
-.idea
+.idea/
 build/
 dist/
+release/
+__pycache__/
 *.spec
