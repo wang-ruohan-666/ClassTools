@@ -6,19 +6,20 @@ from typing import Optional
 
 _LOGGER_CONFIGURED = False
 
-DEFAULT_LOG_DIR = Path.home()/"MusicPlayer"/"logs"
+DEFAULT_LOG_DIR = Path.home() / "MusicPlayer" / "logs"
 
 LOG_FORMAT = "%(asctime)s-%(name)s-%(levelname)s-[%(threadName)s] - %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+
 def setup_logger(
-        level:int = logging.INFO,
-        log_dir:Optional[Path] = None,
-        log_to_console:bool = True,
-        log_to_file:bool = True,
-        max_bytes:int = 10*1024*1024,
-        backup_count:int = 5,
-)->None:
+        level: int = logging.INFO,
+        log_dir: Optional[Path] = None,
+        log_to_console: bool = True,
+        log_to_file: bool = True,
+        max_bytes: int = 10 * 1024 * 1024,
+        backup_count: int = 5,
+) -> None:
     """
         全局日志配置，应在应用启动时调用一次。
         :param level: 全局日志级别
@@ -37,7 +38,7 @@ def setup_logger(
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    formatter = logging.Formatter(LOG_FORMAT,DATE_FORMAT)
+    formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
 
     if log_to_console:
         console_handler = logging.StreamHandler(sys.stdout)
@@ -47,10 +48,10 @@ def setup_logger(
     if log_to_file:
         if log_dir is None:
             log_dir = DEFAULT_LOG_DIR
-        log_dir.mkdir(parents=True,exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
         file_path = log_dir / "app.log"
         file_handler = logging.handlers.TimedRotatingFileHandler(
-            file_path, backupCount=backup_count,encoding="utf-8"
+            file_path, backupCount=backup_count, encoding="utf-8"
         )
         file_handler.setFormatter(formatter)
         root_logger.addHandler(file_handler)
@@ -58,7 +59,8 @@ def setup_logger(
         _LOGGER_CONFIGURED = True
         logging.info("日志系统初始化完成，日志目录: %s", log_dir)
 
-def get_logger(name:str)->logging.Logger:
+
+def get_logger(name: str) -> logging.Logger:
     """
         获取指定名称的 logger。
         建议使用模块的 __name__ 作为参数。

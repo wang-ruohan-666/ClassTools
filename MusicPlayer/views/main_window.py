@@ -1,25 +1,23 @@
 # views/main_window.py
-import base64
-import json
-import os.path
-import time
 from typing import Callable, Literal
 
-import requests
 from PySide6.QtCore import Qt, QTimer, QEasingCurve, QPropertyAnimation
-from PySide6.QtGui import QIcon, QAction, QPixmap, QFont
+from PySide6.QtGui import QIcon, QAction, QFont
 from PySide6.QtWidgets import QApplication, QWidget, QMenu, QSystemTrayIcon
 
 from MusicPlayer.common.logger import get_logger
 from MusicPlayer.managers.settings_manager import SettingsManager
 from MusicPlayer.managers.theme_manager import ThemeManager
+from MusicPlayer.services.netease_service import NeteaseService
+from MusicPlayer.ui_main import Ui_Form as Main
 from MusicPlayer.views.playlist_window import PlaylistWindows
 from MusicPlayer.views.settings_window import SettingsWindow
-from MusicPlayer.ui_main import Ui_Form as Main
 
 logger = get_logger(__name__)
+
+
 class MainWindow(QWidget):
-    def __init__(self,settings_mgr: SettingsManager, theme_mgr: ThemeManager):
+    def __init__(self, settings_mgr: SettingsManager, theme_mgr: ThemeManager):
         super().__init__()
 
         self.FRAME_OPTION_OFFSET_X = -280
@@ -52,28 +50,19 @@ class MainWindow(QWidget):
         self.init_options_anim()
         self.main.label.hide()
 
-        self.cookie = ""
-        # noinspection SpellCheckingInspection
-        if os.path.isfile("data/settings.json"):
-            with open("data/settings.json", "r") as f:
-                try:
-                    data = json.load(f)
-                    self.cookie = data.get("cookie")
-                except json.JSONDecodeError:
-                    logger.warning("settings.json 不合法")
-        self.login = False
-        self.http_prefix = "http://localhost:3000"
-        self.last_try_login_time = 0
         self.show_img_anim = QPropertyAnimation(self.main.frame, b"geometry")
         self.hide_img_anim = QPropertyAnimation(self.main.frame, b"geometry")
         self.init_login_img_show_anim()
         self.init_login_img_hide_anim()
         self.open_cloud_music = QAction("启用网易云音乐功能")
         self.init_open_cloud_music()
-        self.login_remaining = 90
 
         self.connect_global_signals()
         self.theme_mgr.theme_applied.connect(self._on_theme)
+        self.netease = NeteaseService()
+        self.netease.qr_image_ready.connect(self.on_qr_ready)
+        self.netease.login_status.connect(self.on_login_status)
+        self.netease.notification.connect(self.show_text)
 
         self.show()
 
@@ -92,11 +81,11 @@ class MainWindow(QWidget):
             else:
                 self.main.label.setMinimumHeight(0)
 
-        def anim_speed_changed():
-            self.options_anim.setDuration(int(250 / self.settings_mgr.anim_speed))
-            self.show_text_anim.setDuration(int(500 / self.settings_mgr.anim_speed))
-            self.show_img_anim.setDuration(int(300 / self.settings_mgr.anim_speed))
-            self.hide_img_anim.setDuration(int(300 / self.settings_mgr.anim_speed))
+        def anim_speed_changed(speed: float):
+            self.options_anim.setDuration(int(250 / speed))
+            self.show_text_anim.setDuration(int(500 / speed))
+            self.show_img_anim.setDuration(int(300 / speed))
+            self.hide_img_anim.setDuration(int(300 / speed))
 
         def stay_on_top_changed(checked):
             if checked:
@@ -110,7 +99,6 @@ class MainWindow(QWidget):
         self.settings_mgr.font_size_changed.connect(font_size_changed)
         self.settings_mgr.anim_speed_changed.connect(anim_speed_changed)
         self.settings_mgr.stay_on_top_changed.connect(stay_on_top_changed)
-
 
     def init_timer(self):
         self.timer.timeout.connect(self.check_selection_status)
@@ -149,9 +137,9 @@ class MainWindow(QWidget):
     def init_open_cloud_music(self):
         def check_cloud_music():
             if self.open_cloud_music.text() == "启用网易云音乐功能":
-                logger.info("网易云音乐功能已开启")
-                self.open_cloud_music.setText("关闭网易云音乐功能")
-                self.check_cookie()
+                logger.info("网易云音乐功能尝试开启")
+                self.open_cloud_music.setEnabled(False)
+                self.netease.check_cookie()
             else:
                 logger.info("网易云音乐功能已关闭")
                 self.open_cloud_music.setText("启用网易云音乐功能")
@@ -173,7 +161,7 @@ class MainWindow(QWidget):
             self.timer.start(100)
             logger.debug("Qtimer启动")
 
-    def _on_theme(self,theme: str):
+    def _on_theme(self, theme: str):
         if theme == "dark":
             self._dark()
         elif theme == "light":
@@ -370,9 +358,6 @@ class MainWindow(QWidget):
         self.main.refuse.clicked.connect(click_refuse)
 
     def open_settings(self):
-        self.settings_win.opacity_effect.setOpacity(0.0)
-        self.settings_win.settings_anim.setDuration(int(300 / self.settings_win.anim_speed))
-        self.settings_win.settings_anim.start()
         self.settings_win.show()
 
     def contextMenuEvent(self, event):
@@ -413,114 +398,33 @@ class MainWindow(QWidget):
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
 
-    def post(self, url, no_caching=False, data: dict = None) -> dict:
-        if data is None:
-            data = {}
-        if self.cookie:
-            data["cookie"] = self.cookie
-        get_url = f"{self.http_prefix}{url}"
-        try:
-            if no_caching:
-                return requests.post(f"{get_url}?timestamp={int(time.time())}", data=data).json()
-            else:
-                return requests.post(get_url, data=data).json()
-        except requests.exceptions.ConnectionError:
-            logger.error(f"请求{get_url}失败")
-            raise
+    def _hide_login_ui(self):
+        self.main.img.hide()
+        self.main.labelLogin.hide()
+        self.main.labelLoginTimeout.hide()
+        self.hide_img_anim.start()
 
-    def go_login(self):
-        if time.time() - self.last_try_login_time > 90:
-            self.last_try_login_time = time.time()
-            qr = None
-            unikey = None
-            try:
-                unikey = self.post("/login/qr/key", True).get("data").get("unikey")
-                qr = self.post(f"/login/qr/create", True, {"key": unikey, "qrimg": True}).get("data").get("qrimg")
-            except requests.exceptions.ConnectionError:
-                self.show_text("生成二维码登录失败")
-            if qr:
-                if ',' in qr and qr.startswith('data:'):
-                    qr = qr.split(',', 1)[1]
-                img_bytes = base64.b64decode(qr)
-                pixmap = QPixmap()
-                pixmap.loadFromData(img_bytes)
-                self.main.img.setPixmap(pixmap)
-                self.main.img.setScaledContents(True)
-                self.show_img_anim.start()
-                login_check = QTimer(self)
-                login_time_reduce = QTimer(self)
+    def on_qr_ready(self, pixmap):
+        self.main.img.setPixmap(pixmap)
+        self.main.img.setScaledContents(True)
+        self.show_img_anim.start()
 
-                def check_login():
-                    data = self.post(f"/login/qr/check", True, {"key": unikey})
-                    if data.get("code") == 803:
-                        self.cookie = data["cookie"]
-                        login_time_reduce.stop()
-                        login_time_reduce.deleteLater()
-                        login_time_reduce.deleteLater()
-                        file={}
-                        with open("data/settings.json", "r") as f:
-                            file=json.load(f)
-                        file["cookie"] = self.cookie
-                        with open("data/settings.json", "w") as f:
-                            f.write(json.dumps(file))
-                        self.main.labelLoginTimeout.setText("登录成功")
-
-                        def hide():
-                            self.main.img.hide()
-                            self.main.labelLogin.hide()
-                            self.main.labelLoginTimeout.hide()
-                            self.hide_img_anim.start()
-
-                        QTimer.singleShot(3000, hide)
-                        logger.info(f"登录成功{self.cookie}")
-                    elif data['code'] == 802:
-                        if login_time_reduce.isActive():
-                            login_time_reduce.stop()
-                        self.main.labelLoginTimeout.setText("等待确认")
-
-                self.login_remaining = 90
-
-                def time_reduce():
-                    self.login_remaining -= 1
-                    self.main.labelLoginTimeout.setText(f"{self.login_remaining}S")
-                    if self.login_remaining <= 0:
-                        login_check.stop()
-                        login_check.deleteLater()
-
-                login_time_reduce.timeout.connect(time_reduce)
-                login_time_reduce.setInterval(1000)
-                login_time_reduce.start()
-
-                login_check.timeout.connect(check_login)
-                login_check.setInterval(3000)
-                login_check.start()
-
-                def stop_login_check():
-                    if login_check.isActive():
-                        login_check.stop()
-                        self.go_login()
-
-                QTimer.singleShot(90000, stop_login_check)
-
-
+    def on_login_status(self, status):
+        if status in ["登录成功","登录超时"]:
+            if status=="登录成功":
+                logger.info("网易云音乐功能已开启")
+                self.open_cloud_music.setText("关闭网易云音乐功能")
+            self.main.labelLoginTimeout.setText(status)
+            QTimer.singleShot(3000, self._hide_login_ui)
+            self.open_cloud_music.setEnabled(True)
+        elif status in ["等待确认","等待扫码"]:
+            self.open_cloud_music.setText("关闭网易云音乐功能")
+            self.main.labelLoginTimeout.setText(status)
+        elif status == "已登录":
+            self.open_cloud_music.setEnabled(True)
         else:
-            logger.info("距离上次请求二维码时间过短")
-
-    def check_cookie(self):
-        try:
-            data = self.post("/login/status", True)["data"]
-            if data["profile"] is not None:
-                self.show_text("已登录", False, "center")
-                logger.info("已登录")
-                self.login = True
-                return
-            else:
-                logger.warning("cookie无效")
-                self.cookie = ""
-                self.go_login()
-        except requests.exceptions.ConnectionError:
-            self.show_text("检查登录失败无法连接服务器")
-            logger.error("检查更新失败无法连接服务器")
-        except Exception as e:
-            self.show_text("检查登录失败")
-            logger.error(f"检查更新失败{e}")
+            try:
+                int(status)
+                self.main.labelLoginTimeout.setText(f"{status}S")
+            except ValueError:
+                pass

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1006</width>
+    <width>1050</width>
     <height>229</height>
    </rect>
   </property>
@@ -14,7 +14,47 @@
    <string/>
   </property>
   <property name="styleSheet">
-   <string notr="true"/>
+   <string notr="true">QMenu {
+   background-color: #ffffff;
+   border: 1px solid #c0c0c0;
+   border-radius: 6px;
+   padding: 4px;
+}
+
+QMenu::item {
+   background-color: transparent;
+   color: #000000;
+   padding: 6px 24px 6px 12px;
+   border-radius: 0px;
+   min-width: 120px;
+}
+
+QMenu::item:selected {
+   background-color: #e0e0e0;
+   border-radius: 4px;
+}
+
+QMenu::item:disabled {
+   color: #a0a0a0;
+   background-color: transparent;
+}
+
+QMenu::separator {
+   height: 1px;
+   background: #c0c0c0;
+   margin: 4px 8px;
+}
+
+QMenu::indicator {
+   width: 14px;
+   height: 14px;
+   margin-left: 4px;
+}
+
+QMenu::indicator:checked {
+   background-color: #448aff;
+   border-radius: 3px;
+}</string>
   </property>
   <widget class="QFrame" name="frame">
    <property name="geometry">

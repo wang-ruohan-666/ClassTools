@@ -20,6 +20,7 @@ class SettingsWindow(QWidget):
         self._settings_drag_pos = None
         self.opacity_effect = QGraphicsOpacityEffect()
         self.settings_anim = QPropertyAnimation(self.opacity_effect, b"opacity")
+        self.opacity_effect.setOpacity(0.0)
 
         self.init_settings()
         self.init_settings_anim()
@@ -501,3 +502,9 @@ QCheckBox::indicator:checked:disabled {
                 self._settings_drag_pos = None
                 return True
         return super().eventFilter(watched, event)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # 确保动画时长与当前动画速度同步
+        self.settings_anim.setDuration(int(300 / self.anim_speed))
+        self.settings_anim.start()

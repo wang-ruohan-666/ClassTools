@@ -3,13 +3,13 @@ from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QTimer, QEasingCurve
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import QWidget, QApplication, QListView, QAbstractItemView
 
-from MusicPlayer.ui_playlist import Ui_Form as Playlist
+from MusicPlayer.GetSongInfo import get_song_info
+from MusicPlayer.PlaylistDelegate import PlaylistDelegate
+from MusicPlayer.PlaylistModel import PlaylistModel
+from MusicPlayer.SongItem import SongItem
 from MusicPlayer.managers.settings_manager import SettingsManager
 from MusicPlayer.managers.theme_manager import ThemeManager
-from MusicPlayer.GetSongInfo import get_song_info
-from MusicPlayer.SongItem import SongItem
-from MusicPlayer.PlaylistModel import PlaylistModel
-from MusicPlayer.PlaylistDelegate import PlaylistDelegate
+from MusicPlayer.ui_playlist import Ui_Form as Playlist
 
 
 class PlaylistWindows(QWidget):
@@ -72,7 +72,7 @@ class PlaylistWindows(QWidget):
         # 置顶变化（如果需要）
         self.settings_mgr.stay_on_top_changed.connect(self._update_stay_on_top)
 
-    def _on_theme(self,theme: str):
+    def _on_theme(self, theme: str):
         if theme == "dark":
             self._dark()
         elif theme == "light":
@@ -277,10 +277,11 @@ QScrollBar::sub-page:vertical {
         def fixed_clicked():
             if self.fixed:
                 self.fixed = False
-                self.playlist.png.setIcon(QIcon("data/unpin.png"))
+                self.playlist.png.setIcon(QIcon(""))
             else:
                 self.fixed = True
                 self.playlist.png.setIcon(QIcon("data/fixed.png"))
+
         self.playlist.png.setIcon(QIcon("data/unpin.png"))
         self.playlist.png.setIconSize(QSize(25, 25))
         self.playlist.png.clicked.connect(fixed_clicked)

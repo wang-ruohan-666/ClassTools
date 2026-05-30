@@ -23,8 +23,48 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(1006, 229)
-        Form.setStyleSheet(u"")
+        Form.resize(1050, 229)
+        Form.setStyleSheet(u"QMenu {\n"
+"   background-color: #ffffff;\n"
+"   border: 1px solid #c0c0c0;\n"
+"   border-radius: 6px;\n"
+"   padding: 4px;\n"
+"}\n"
+"\n"
+"QMenu::item {\n"
+"   background-color: transparent;\n"
+"   color: #000000;\n"
+"   padding: 6px 24px 6px 12px;\n"
+"   border-radius: 0px;\n"
+"   min-width: 120px;\n"
+"}\n"
+"\n"
+"QMenu::item:selected {\n"
+"   background-color: #e0e0e0;\n"
+"   border-radius: 4px;\n"
+"}\n"
+"\n"
+"QMenu::item:disabled {\n"
+"   color: #a0a0a0;\n"
+"   background-color: transparent;\n"
+"}\n"
+"\n"
+"QMenu::separator {\n"
+"   height: 1px;\n"
+"   background: #c0c0c0;\n"
+"   margin: 4px 8px;\n"
+"}\n"
+"\n"
+"QMenu::indicator {\n"
+"   width: 14px;\n"
+"   height: 14px;\n"
+"   margin-left: 4px;\n"
+"}\n"
+"\n"
+"QMenu::indicator:checked {\n"
+"   background-color: #448aff;\n"
+"   border-radius: 3px;\n"
+"}")
         self.frame = QFrame(Form)
         self.frame.setObjectName(u"frame")
         self.frame.setGeometry(QRect(280, 0, 411, 45))
@@ -47,6 +87,7 @@ class Ui_Form(object):
         self.label = QLabel(self.frame_2)
         self.label.setObjectName(u"label")
         self.label.setMinimumSize(QSize(0, 0))
+        self.label.setMaximumSize(QSize(16777215, 16777215))
 
         self.horizontalLayout.addWidget(self.label)
 
@@ -99,13 +140,13 @@ class Ui_Form(object):
 
         self.horizontalLayout_2.addWidget(self.refuse)
 
-        self.widget = QWidget(Form)
-        self.widget.setObjectName(u"widget")
-        self.widget.setGeometry(QRect(400, 10, 161, 205))
-        self.loginLayout = QVBoxLayout(self.widget)
+        self.layoutWidget = QWidget(Form)
+        self.layoutWidget.setObjectName(u"layoutWidget")
+        self.layoutWidget.setGeometry(QRect(400, 10, 161, 205))
+        self.loginLayout = QVBoxLayout(self.layoutWidget)
         self.loginLayout.setObjectName(u"loginLayout")
         self.loginLayout.setContentsMargins(0, 0, 0, 0)
-        self.labelLogin = QLabel(self.widget)
+        self.labelLogin = QLabel(self.layoutWidget)
         self.labelLogin.setObjectName(u"labelLogin")
         self.labelLogin.setMinimumSize(QSize(0, 0))
         self.labelLogin.setMaximumSize(QSize(16777215, 15))
@@ -113,7 +154,7 @@ class Ui_Form(object):
 
         self.loginLayout.addWidget(self.labelLogin)
 
-        self.img = QLabel(self.widget)
+        self.img = QLabel(self.layoutWidget)
         self.img.setObjectName(u"img")
         self.img.setMinimumSize(QSize(0, 161))
         self.img.setMaximumSize(QSize(16777215, 161))
@@ -121,7 +162,7 @@ class Ui_Form(object):
 
         self.loginLayout.addWidget(self.img)
 
-        self.labelLoginTimeout = QLabel(self.widget)
+        self.labelLoginTimeout = QLabel(self.layoutWidget)
         self.labelLoginTimeout.setObjectName(u"labelLoginTimeout")
         self.labelLoginTimeout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 

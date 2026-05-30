@@ -16,14 +16,14 @@ class ThemeManager(QObject):
     THEME_DARK = "dark"
     THEME_LIGHT = "light"
 
-    def __init__(self, settings_manager:SettingsManager):
+    def __init__(self, settings_manager: SettingsManager):
         """
         :param settings_manager: SettingsManager 实例，用于监听主题变化
         """
         super().__init__()
         self._settings_mgr = settings_manager
-        self._current_theme = self.THEME_LIGHT   # 实际应用的主题（dark/light）
-        self._pending_theme = None               # 用于延迟刷新的标志
+        self._current_theme = self.THEME_LIGHT  # 实际应用的主题（dark/light）
+        self._pending_theme = None  # 用于延迟刷新的标志
 
         # 连接设置管理器的信号
         self._settings_mgr.theme_changed.connect(self._on_theme_setting_changed)
@@ -65,7 +65,6 @@ class ThemeManager(QObject):
 
     # 自定义信号：通知其他组件主题已具体应用到 dark / light
     theme_applied = Signal(str)
-
 
     def get_current_theme_name(self) -> str:
         """返回当前实际应用的主题名称 ('dark' 或 'light')"""
