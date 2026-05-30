@@ -1,4 +1,6 @@
 # views/playlist_window.py
+from pathlib import Path
+
 from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QTimer, QEasingCurve
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import QWidget, QApplication, QListView, QAbstractItemView
@@ -31,6 +33,7 @@ class PlaylistWindows(QWidget):
         self.fixed = False
         self.playlist_hide_time = 3000
         self.is_hide = False
+        self.path = Path(__file__).parent.parent
 
         self.playlist_model = PlaylistModel()
         self.setAcceptDrops(True)
@@ -168,6 +171,62 @@ QScrollBar::sub-page:vertical {
             border-top-left-radius: 15px;
             border-top-right-radius: 15px;
         }""")
+        self.playlist_view.setStyleSheet("""/* 播放列表 QListView 基本样式 */
+QListView {
+    background-color: #1e1e1e;      /* 与窗口背景一致 */
+    border: none;
+    outline: none;                   /* 移除焦点虚线框 */
+    padding: 4px;
+}
+
+/* 列表项样式（委托未覆盖的部分） */
+QListView::item {
+    background-color: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* 列表项悬停效果（若委托未完全覆盖，可提供视觉反馈） */
+QListView::item:hover {
+    background-color: #2d2d2d;
+}
+
+/* 列表项选中效果 */
+QListView::item:selected {
+    background-color: #3c3c3c;
+}
+
+/* 滚动条（垂直） */
+QScrollBar:vertical {
+    background: #2d2d2d;
+    width: 8px;
+    margin: 0;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: #5a5a5a;
+    min-height: 30px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #888888;
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #aaaaaa;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+    border: none;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}""")
 
     def _light(self):
         self.playlist_delegate.is_dark = False
@@ -261,6 +320,62 @@ QScrollBar::sub-page:vertical {
             border-top-left-radius: 15px;
             border-top-right-radius: 15px;
         }""")
+        self.playlist_view.setStyleSheet("""/* 播放列表 QListView 基本样式 */
+QListView {
+    background-color: #e8e8e8;      /* 与窗口背景一致 */
+    border: none;
+    outline: none;
+    padding: 4px;
+}
+
+/* 列表项样式 */
+QListView::item {
+    background-color: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* 悬停效果 */
+QListView::item:hover {
+    background-color: #d0d0d0;
+}
+
+/* 选中效果 */
+QListView::item:selected {
+    background-color: #c0c0c0;
+}
+
+/* 滚动条（垂直） */
+QScrollBar:vertical {
+    background: #f0f0f0;
+    width: 8px;
+    margin: 0;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: #c0c0c0;
+    min-height: 30px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #a0a0a0;
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #808080;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+    border: none;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}""")
 
     def _update_anim_durations(self, speed: float):
         self.show_anim.setDuration(int(600 / speed))
@@ -277,12 +392,12 @@ QScrollBar::sub-page:vertical {
         def fixed_clicked():
             if self.fixed:
                 self.fixed = False
-                self.playlist.png.setIcon(QIcon(""))
+                self.playlist.png.setIcon(QIcon(str(self.path / "resources" / "icons"/"unpin.png")))
             else:
                 self.fixed = True
-                self.playlist.png.setIcon(QIcon("data/fixed.png"))
+                self.playlist.png.setIcon(QIcon(str(self.path  / "resources" / "icons"/"fixed.png")))
 
-        self.playlist.png.setIcon(QIcon("data/unpin.png"))
+        self.playlist.png.setIcon(QIcon(str(self.path / "resources" / "icons"/"unpin.png")))
         self.playlist.png.setIconSize(QSize(25, 25))
         self.playlist.png.clicked.connect(fixed_clicked)
 

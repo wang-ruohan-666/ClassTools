@@ -1,6 +1,5 @@
 # views/settings_window.py
-from PySide6.QtCore import QPropertyAnimation, QEvent
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt,QPropertyAnimation, QEvent
 from PySide6.QtGui import QFont, QMouseEvent
 from PySide6.QtWidgets import QWidget, QGraphicsOpacityEffect
 
@@ -475,6 +474,12 @@ QCheckBox::indicator:checked:disabled {
     def _on_stay_on_top_toggled(self, checked: bool):
         self.settings_mgr.stay_on_top = checked
         self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
+        if checked:
+            self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
+        else:
+            self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
+        self.show()
+
         # 窗口置顶标志的视觉更新由 ThemeManager 或主窗口处理，这里仅修改标志
 
     def tree_item_change(self, item, column):

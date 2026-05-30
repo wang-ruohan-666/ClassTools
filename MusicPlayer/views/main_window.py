@@ -12,6 +12,7 @@ from MusicPlayer.services.netease_service import NeteaseService
 from MusicPlayer.ui_main import Ui_Form as Main
 from MusicPlayer.views.playlist_window import PlaylistWindows
 from MusicPlayer.views.settings_window import SettingsWindow
+from MusicPlayer.views.search_window import SearchWindow
 
 logger = get_logger(__name__)
 
@@ -32,6 +33,7 @@ class MainWindow(QWidget):
         self.main.setupUi(self)
         self.settings_win = SettingsWindow(settings_mgr, theme_mgr)
         self.playlist_win = PlaylistWindows(settings_mgr, theme_mgr)
+        self.search_win = SearchWindow(settings_mgr, theme_mgr)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.main.options.hide()
@@ -428,3 +430,12 @@ class MainWindow(QWidget):
                 self.main.labelLoginTimeout.setText(f"{status}S")
             except ValueError:
                 pass
+
+    def mouseDoubleClickEvent(self, event):
+        pos = event.pos()
+        if hasattr(self, 'main') and hasattr(self.main, 'frame'):
+            titlebar_rect = self.main.frame.geometry()
+            if titlebar_rect.contains(pos):
+                self.search_win.show()
+                return
+        super().mouseDoubleClickEvent(event)

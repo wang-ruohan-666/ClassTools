@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>373</width>
-    <height>592</height>
+    <height>610</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <x>0</x>
      <y>0</y>
      <width>371</width>
-     <height>30</height>
+     <height>35</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -59,7 +59,7 @@
     <property name="geometry">
      <rect>
       <x>320</x>
-      <y>0</y>
+      <y>3</y>
       <width>30</width>
       <height>30</height>
      </rect>
@@ -86,7 +86,7 @@ QPushButton:hover {
      <x>0</x>
      <y>30</y>
      <width>371</width>
-     <height>551</height>
+     <height>571</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -106,6 +106,8 @@ QPushButton:hover {
    </property>
    <layout class="QVBoxLayout" name="verticalLayout"/>
   </widget>
+  <zorder>root</zorder>
+  <zorder>titlebar</zorder>
  </widget>
  <resources/>
  <connections/>

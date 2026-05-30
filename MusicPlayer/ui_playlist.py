@@ -22,10 +22,10 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(373, 592)
+        Form.resize(373, 610)
         self.titlebar = QFrame(Form)
         self.titlebar.setObjectName(u"titlebar")
-        self.titlebar.setGeometry(QRect(0, 0, 371, 30))
+        self.titlebar.setGeometry(QRect(0, 0, 371, 35))
         self.titlebar.setStyleSheet(u"QFrame{\n"
 "	background-color:rgb(255, 255, 255); \n"
 " 	border-bottom-left-radius: 0px;\n"
@@ -43,7 +43,7 @@ class Ui_Form(object):
         self.text.setFont(font)
         self.png = QPushButton(self.titlebar)
         self.png.setObjectName(u"png")
-        self.png.setGeometry(QRect(320, 0, 30, 30))
+        self.png.setGeometry(QRect(320, 3, 30, 30))
         self.png.setStyleSheet(u"QPushButton { \n"
 "	border-radius:3px;\n"
 "	padding: 50px; \n"
@@ -55,7 +55,7 @@ class Ui_Form(object):
 "}")
         self.root = QFrame(Form)
         self.root.setObjectName(u"root")
-        self.root.setGeometry(QRect(0, 30, 371, 551))
+        self.root.setGeometry(QRect(0, 30, 371, 571))
         self.root.setStyleSheet(u"#root{\n"
 "	background-color:#F0F0F0;\n"
 "    border-bottom-left-radius: 15px;\n"
@@ -67,6 +67,8 @@ class Ui_Form(object):
         self.root.setFrameShadow(QFrame.Shadow.Raised)
         self.verticalLayout = QVBoxLayout(self.root)
         self.verticalLayout.setObjectName(u"verticalLayout")
+        self.root.raise_()
+        self.titlebar.raise_()
 
         self.retranslateUi(Form)
 
