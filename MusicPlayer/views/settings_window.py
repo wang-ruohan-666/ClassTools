@@ -26,6 +26,7 @@ class SettingsWindow(QWidget):
         self.load_initial_values()
         self.connect_signals()
 
+
     def init_settings(self):
         self.settings.settingsFrame.hide()
         self.settings.animSpeedFrame.hide()
@@ -450,7 +451,6 @@ QCheckBox::indicator:checked:disabled {
     def _on_theme_combobox_changed(self, text: str):
         if text in ("深色", "浅色", "跟随系统"):
             self.settings_mgr.theme = text
-            self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
 
     def _on_font_changed(self, font: QFont):
         self.settings_mgr.font = font
@@ -466,14 +466,13 @@ QCheckBox::indicator:checked:disabled {
         speed = value / 10.0
         self.settings.labelSpeed.setText(f"{speed:.1f}")
         self.settings_mgr.anim_speed = speed
+        self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
         # 更新窗口自身动画时长
         self.anim_speed = speed
         self.settings_anim.setDuration(int(300 / speed))
-        self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
 
     def _on_stay_on_top_toggled(self, checked: bool):
         self.settings_mgr.stay_on_top = checked
-        self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
         if checked:
             self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
         else:

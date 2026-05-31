@@ -1,7 +1,9 @@
+# PlaylistDelegate.py
 from PySide6.QtCore import Qt, QSize, QRect
 from PySide6.QtGui import QColor, QFont, QPainter
-from PySide6.QtWidgets import QStyledItemDelegate, QStyle
+from PySide6.QtWidgets import QStyledItemDelegate, QStyle, QStyleOptionViewItem
 
+from MusicPlayer.PlaylistModel import PlaylistModel  # 新增导入
 
 class PlaylistDelegate(QStyledItemDelegate):
     def __init__(self, is_dark=True):
@@ -11,31 +13,49 @@ class PlaylistDelegate(QStyledItemDelegate):
     def paint(self, painter: QPainter, option, index):
         painter.save()
 
+        # 获取 model 检查交换动画状态
+        model = index.model()
+        adjusted_option = QStyleOptionViewItem(option)  # 复制 option，以便修改矩形
+
+        if isinstance(model, PlaylistModel) and model.anim_source >= 0 and model.anim_target >= 0:
+            row = index.row()
+            if row == model.anim_source or row == model.anim_target:
+                # 计算垂直偏移量：源行向目标行移动，目标行向源行移动
+                item_height = option.rect.height()
+                if row == model.anim_source:
+                    offset_y = (model.anim_target - model.anim_source) * item_height * model.anim_progress
+                else:
+                    offset_y = (model.anim_source - model.anim_target) * item_height * model.anim_progress
+                adjusted_option.rect.translate(0, int(offset_y))
+
+        # 使用调整后的矩形进行绘制
+        rect = adjusted_option.rect
+
         # 1. 背景（选中/普通）
         if option.state & QStyle.StateFlag.State_Selected:
             bg_color = QColor("#3c3c3c") if self.is_dark else QColor("#e0e0e0")
         else:
             bg_color = QColor("#2d2d2d") if self.is_dark else QColor("#ffffff")
-        painter.fillRect(option.rect, bg_color)
+        painter.fillRect(rect, bg_color)
 
-        # 2. 获取数据（使用完整 ItemDataRole）
+        # 2. 获取数据
         title = index.data(Qt.ItemDataRole.DisplayRole)
         author = index.data(Qt.ItemDataRole.UserRole)
-        cover = index.data(Qt.ItemDataRole.UserRole + 1)  # QPixmap
-        duration = index.data(Qt.ItemDataRole.UserRole + 2)  # 秒
+        cover = index.data(Qt.ItemDataRole.UserRole + 1)
+        duration = index.data(Qt.ItemDataRole.UserRole + 2)
 
-        # 3. 绘制封面（左侧 50x50）
+        # 3. 绘制封面
         if cover and not cover.isNull():
-            cover_rect = QRect(option.rect.left() + 5, option.rect.top() + 5, 50, 50)
+            cover_rect = QRect(rect.left() + 5, rect.top() + 5, 50, 50)
             scaled_cover = cover.scaled(50, 50,
                                         Qt.AspectRatioMode.KeepAspectRatio,
                                         Qt.TransformationMode.SmoothTransformation)
             painter.drawPixmap(cover_rect, scaled_cover)
 
-        # 4. 文字区域（封面右侧）
-        text_rect = option.rect.adjusted(60, 5, -10, -5)
+        # 4. 文字区域
+        text_rect = rect.adjusted(60, 5, -10, -5)
 
-        # 歌名（左上方）
+        # 歌名
         painter.setPen(QColor("#ffffff") if self.is_dark else QColor("#000000"))
         font = QFont()
         font.setPointSize(10)
@@ -46,7 +66,7 @@ class PlaylistDelegate(QStyledItemDelegate):
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                          title)
 
-        # 作者（歌名下方，颜色较淡）
+        # 作者
         if author:
             painter.setPen(QColor("#aaaaaa") if self.is_dark else QColor("#888888"))
             font.setPointSize(8)
@@ -57,7 +77,7 @@ class PlaylistDelegate(QStyledItemDelegate):
                              Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                              author)
 
-        # 时长（右下角）
+        # 时长
         if duration:
             mins, secs = divmod(duration, 60)
             time_str = f"{int(mins)}:{int(secs):02d}"

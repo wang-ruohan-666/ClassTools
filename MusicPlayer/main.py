@@ -1,4 +1,4 @@
-# pyside6-uic main.ui -o ui_main.py
+# main.pu
 import logging
 import sys
 from PySide6.QtGui import QIcon

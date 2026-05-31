@@ -66,6 +66,8 @@ class MainWindow(QWidget):
         self.netease.login_status.connect(self.on_login_status)
         self.netease.notification.connect(self.show_text)
 
+        self.playlist_win.open_settings_signal.connect(self.open_settings)
+
         self.show()
 
     def connect_global_signals(self):

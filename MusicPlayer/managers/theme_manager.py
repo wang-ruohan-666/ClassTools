@@ -15,7 +15,8 @@ class ThemeManager(QObject):
     # 主题常量
     THEME_DARK = "dark"
     THEME_LIGHT = "light"
-
+    # 自定义信号：通知其他组件主题已具体应用到 dark / light
+    theme_applied = Signal(str)
     def __init__(self, settings_manager: SettingsManager):
         """
         :param settings_manager: SettingsManager 实例，用于监听主题变化
@@ -50,7 +51,7 @@ class ThemeManager(QObject):
         self._current_theme = actual_theme
         # 延迟一点应用，避免在信号链中频繁重绘
         self._pending_theme = actual_theme
-        QTimer.singleShot(20, self._apply_theme)
+        QTimer.singleShot(100, self._apply_theme)
 
     def _apply_theme(self):
         """实际执行样式表应用（延迟调用）"""
@@ -62,9 +63,6 @@ class ThemeManager(QObject):
         logger.info("应用主题: %s", theme)
         # 通知所有控件
         self.theme_applied.emit(theme)
-
-    # 自定义信号：通知其他组件主题已具体应用到 dark / light
-    theme_applied = Signal(str)
 
     def get_current_theme_name(self) -> str:
         """返回当前实际应用的主题名称 ('dark' 或 'light')"""

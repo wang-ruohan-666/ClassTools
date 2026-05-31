@@ -213,7 +213,6 @@ QFrame{
     def _on_theme_combobox_changed(self, text: str):
         if text in ("深色", "浅色", "跟随系统"):
             self.settings_mgr.theme = text
-            self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
 
     def showEvent(self, event):
         super().showEvent(event)
