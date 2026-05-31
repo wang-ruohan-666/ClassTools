@@ -8,11 +8,14 @@ from PySide6.QtWidgets import QApplication, QWidget, QMenu, QSystemTrayIcon
 from MusicPlayer.common.logger import get_logger
 from MusicPlayer.managers.settings_manager import SettingsManager
 from MusicPlayer.managers.theme_manager import ThemeManager
+from MusicPlayer.services.audio_analyzer import PeakAnalyzer
 from MusicPlayer.services.netease_service import NeteaseService
 from MusicPlayer.ui_main import Ui_Form as Main
+from MusicPlayer.views.peak_window import PeakWindow
 from MusicPlayer.views.playlist_window import PlaylistWindows
 from MusicPlayer.views.settings_window import SettingsWindow
 from MusicPlayer.views.search_window import SearchWindow
+from MusicPlayer.services.player_service import PlayerService
 
 logger = get_logger(__name__)
 
@@ -33,6 +36,8 @@ class MainWindow(QWidget):
         self.main.setupUi(self)
         self.settings_win = SettingsWindow(settings_mgr, theme_mgr)
         self.playlist_win = PlaylistWindows(settings_mgr, theme_mgr)
+        self.player = PlayerService()
+        self.playlist_win.song_double_clicked.connect(self.player.play_song)
         self.search_win = SearchWindow(settings_mgr, theme_mgr)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -68,7 +73,34 @@ class MainWindow(QWidget):
 
         self.playlist_win.open_settings_signal.connect(self.open_settings)
 
+        self.peak_window = PeakWindow()
+        self.player.compare_peaks_changed.connect(self.peak_window.meter.add_compare_peaks)
+
+        # 初始主题
+        self.peak_window.apply_theme(self.theme_mgr.get_current_theme_name() == "dark")
+
+        # 连接主题信号，同步更新峰值窗口样式
+        self.theme_mgr.theme_applied.connect(self._on_theme_for_peak)
+
+        self.peak_analyzer = PeakAnalyzer()
+        self.peak_analyzer.finished_both.connect(self._on_both_peaks_ready)
+        self.playlist_win.analyze_requested.connect(self._request_peak_analysis_both)
+
+
         self.show()
+
+    def _request_peak_analysis_both(self, file_path):
+        self.peak_analyzer.analyze_both(file_path)
+
+    def _on_both_peaks_ready(self, file_path, orig_peaks, bal_peaks):
+        for song in self.playlist_win.playlist_model.songs:
+            if song.file_path == file_path:
+                song.peaks_normal = orig_peaks
+                song.peaks_balanced = bal_peaks
+                break
+
+    def _on_theme_for_peak(self, theme: str):
+        self.peak_window.apply_theme(theme == "dark")
 
     def connect_global_signals(self):
         def change_font(font: QFont):
@@ -378,6 +410,10 @@ class MainWindow(QWidget):
         app_exit = QAction("退出")
         options.triggered.connect(self.open_settings)
         app_exit.triggered.connect(QApplication.quit)
+        peak_action = QAction("显示峰值曲线", self, checkable=True)
+        peak_action.setChecked(self.peak_window.isVisible())
+        peak_action.toggled.connect(self.peak_window.setVisible)
+        menu.addAction(peak_action)
 
         menu.addAction(self.open_cloud_music)
         menu.addAction(options)

@@ -2,7 +2,8 @@
 import json
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QTimer, QEasingCurve, QIODevice, QDataStream, Signal
+from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QTimer, QEasingCurve, QIODevice, QDataStream, Signal, \
+    QModelIndex
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDrag, QPainter, QColor, QPixmap
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import QWidget, QApplication, QListView, QAbstractItemView, QMenu, QFileDialog
@@ -109,6 +110,9 @@ class DraggableListView(QListView):
 
 class PlaylistWindows(QWidget):
     open_settings_signal = Signal()
+    song_double_clicked = Signal(SongItem)
+    enable_dynaudnorm = Signal(bool)
+    analyze_requested = Signal(str)  # 用于请求分析音频峰值
     def __init__(self, settings_mgr: SettingsManager, theme_mgr: ThemeManager):
         super().__init__()
         self.settings_mgr = settings_mgr
@@ -170,6 +174,13 @@ class PlaylistWindows(QWidget):
     def connect_signals(self):
         self.settings_mgr.anim_speed_changed.connect(self._update_anim_durations)
         self.settings_mgr.stay_on_top_changed.connect(self._update_stay_on_top)
+        self.playlist_view.doubleClicked.connect(self._on_playlist_double_clicked)
+
+    def _on_playlist_double_clicked(self, index: QModelIndex):
+        if not index.isValid():
+            return
+        song_item = self.playlist_model.songs[index.row()]  # 或通过 data() 获取
+        self.song_double_clicked.emit(song_item)
 
     def _on_delete_item(self, row: int):
         self.playlist_model.remove_song(row)
@@ -202,8 +213,10 @@ class PlaylistWindows(QWidget):
     # 注意：add_to_playlist 方法中需要传递 file_path
     def add_to_playlist(self, path):
         info = get_song_info(path)
-        item = SongItem(info[0], info[1], info[2], info[3], file_path=path)  # 添加 file_path
+        item = SongItem(info[0], info[1], info[2], info[3], file_path=path)
         self.playlist_model.add_song(item)
+        # 发射信号，通知主窗口分析该文件
+        self.analyze_requested.emit(path)
 
     def _on_theme(self, theme: str):
         # print(theme)
@@ -603,3 +616,11 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
         # 内部拖拽已由 DraggableListView 处理，这里不再重复
         if not event.isAccepted():
             event.acceptProposedAction()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_F1:
+            self.enable_dynaudnorm.emit(True)
+            logger.info("动态响度均衡已开启")
+        elif event.key() == Qt.Key.Key_F2:
+            self.enable_dynaudnorm.emit(False)
+            logger.info("动态响度均衡已关闭")
