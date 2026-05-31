@@ -73,8 +73,8 @@ class MainWindow(QWidget):
     def connect_global_signals(self):
         def change_font(font: QFont):
             new_font = QFont(font.family())
-            new_font.setPointSize(QApplication.font().pointSize())
-            QApplication.setFont(font)
+            new_font.setPointSize(self.settings_mgr.font_size)
+            QApplication.setFont(new_font)
 
         def font_size_changed(value: int):
             new_font = QFont(self.settings_mgr.font.family())
@@ -103,6 +103,13 @@ class MainWindow(QWidget):
         self.settings_mgr.font_size_changed.connect(font_size_changed)
         self.settings_mgr.anim_speed_changed.connect(anim_speed_changed)
         self.settings_mgr.stay_on_top_changed.connect(stay_on_top_changed)
+        if self.settings_mgr.font.family()!=QFont().family():
+            self.settings_mgr.font_changed.emit(self.settings_mgr.font)
+        if self.settings_mgr.font_size!=9:
+            self.settings_mgr.font_size_changed.emit(self.settings_mgr.font_size)
+        if not self.settings_mgr.stay_on_top:
+            self.settings_mgr.stay_on_top_changed.emit(False)
+        self.theme_mgr.theme_applied.emit(self.theme_mgr.get_current_theme_name())
 
     def init_timer(self):
         self.timer.timeout.connect(self.check_selection_status)

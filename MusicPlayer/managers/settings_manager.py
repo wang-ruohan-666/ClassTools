@@ -59,14 +59,9 @@ class SettingsManager(QObject):
                 self._theme = data["theme"]
             if "font" in data:
                 font = QFont()
-                font.fromString(data["font"])
-                if font.family() != self._font.family():
-                    QTimer.singleShot(50, lambda: self.font_changed.emit(font))
                 self._font = font
             if "font_size" in data:
                 self._font_size = data["font_size"]
-                if data["font_size"] != 9:
-                    QTimer.singleShot(50, lambda: self.font_size_changed.emit(int(data["font_size"])))
             if "anim_speed" in data:
                 self._anim_speed = data["anim_speed"]
             if "stay_on_top" in data:

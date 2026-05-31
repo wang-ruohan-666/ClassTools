@@ -1,7 +1,7 @@
 # views/search_window.py
 from PySide6.QtCore import Qt, QPropertyAnimation, QEvent
-from PySide6.QtGui import QMouseEvent, QFont
-from PySide6.QtWidgets import QWidget, QGraphicsOpacityEffect, QApplication
+from PySide6.QtGui import QMouseEvent
+from PySide6.QtWidgets import QWidget, QGraphicsOpacityEffect
 
 from MusicPlayer.managers.settings_manager import SettingsManager
 from MusicPlayer.managers.theme_manager import ThemeManager
@@ -37,28 +37,22 @@ class SearchWindow(QWidget):
         self.setGraphicsEffect(self.opacity_effect)
 
     def connect_global_signals(self):
-        def change_font(font: QFont):
-            new_font = QFont(font.family())
-            new_font.setPointSize(QApplication.font().pointSize())
-            QApplication.setFont(font)
-
-        def font_size_changed(value: int):
-            new_font = QFont(self.settings_mgr.font.family())
-            new_font.setPointSize(value)
-            QApplication.setFont(new_font)
-
         def anim_speed_changed(speed: float):
             self.search_anim.setDuration(int(250 / speed))
 
         def stay_on_top_changed(checked):
-            if checked:
-                self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
+            if self.isVisible():
+                if checked:
+                    self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
+                else:
+                    self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
+                self.show()
             else:
-                self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
-            self.show()
+                if checked:
+                    self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
+                else:
+                    self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
 
-        self.settings_mgr.font_changed.connect(change_font)
-        self.settings_mgr.font_size_changed.connect(font_size_changed)
         self.settings_mgr.anim_speed_changed.connect(anim_speed_changed)
         self.settings_mgr.stay_on_top_changed.connect(stay_on_top_changed)
         self.theme_mgr.theme_applied.connect(self._on_theme)
@@ -209,10 +203,6 @@ QFrame{
         self.search.searchLineEdit.setStyleSheet("""QLineEdit{
 	background-color:#ebebeb; 
 }""")
-
-    def _on_theme_combobox_changed(self, text: str):
-        if text in ("深色", "浅色", "跟随系统"):
-            self.settings_mgr.theme = text
 
     def showEvent(self, event):
         super().showEvent(event)

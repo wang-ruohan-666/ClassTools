@@ -118,7 +118,10 @@ class PlaylistWindows(QWidget):
         self.playlist.setupUi(self)
         self.move_playlist_window()
 
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
+        if settings_mgr.stay_on_top:
+            self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint)
+        else:
+            self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.hide_anim = QPropertyAnimation(self, b"geometry")

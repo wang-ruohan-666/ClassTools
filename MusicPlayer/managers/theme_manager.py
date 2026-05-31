@@ -28,8 +28,6 @@ class ThemeManager(QObject):
 
         # 连接设置管理器的信号
         self._settings_mgr.theme_changed.connect(self._on_theme_setting_changed)
-        # 初始化时立即应用一次
-        self._on_theme_setting_changed(self._settings_mgr.theme)
 
     def _on_theme_setting_changed(self, setting: str):
         """
